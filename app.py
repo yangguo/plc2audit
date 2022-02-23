@@ -147,7 +147,7 @@ def main():
                 start = j * batch_num + 1
                 end = start + len(proc_batch) - 1
 
-                st.subheader('Content: ' + f'{start}-{end}')
+                st.subheader('Results: ' + f'{start}-{end}')
 
                 # get audit list
                 audit_batch = predict(proc_batch,8, top, max_length)
@@ -160,12 +160,15 @@ def main():
                     audit_list = audit_batch[audit_start:audit_end]
                     auditls.append(audit_list)
                     # print proc and audit list
-                    st.write(proc)
-                    st.write(audit_list)
+                    st.warning('Policy: '+ proc)
+                    # print audit list
+                    st.info('Audit Procedures Generated: ')
+                    for audit in audit_list:
+                        st.write(audit)
                 # convert to dataframe
                 df = pd.DataFrame({
-                    'Policy': proc_batch,
-                    'Audit Procedure': auditls
+                    'policy': proc_batch,
+                    'auditproc': auditls
                 })
                 dfls.append(df)
 
@@ -174,6 +177,9 @@ def main():
         # if dfls not empty
         if dfls:
             alldf = pd.concat(dfls)
+            # df explode by auditproc and reset index
+            alldf = alldf.explode('auditproc')
+            alldf = alldf.reset_index(drop=True)                    
             st.sidebar.download_button(label='Download',
                                        data=alldf.to_csv(),
                                        file_name='plc2auditresult.csv',
