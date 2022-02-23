@@ -1,3 +1,4 @@
+from textwrap import wrap
 import streamlit as st
 import pandas as pd
 import docx
@@ -159,10 +160,14 @@ def main():
                     # get audit list
                     audit_list = audit_batch[audit_start:audit_end]
                     auditls.append(audit_list)
+                    # get count number from start
+                    count = str(j * batch_num + i + 1)
+                    
                     # print proc and audit list
-                    st.warning('Policy: '+ proc)
+                    st.warning('Policy '+count+':')
+                    st.write(proc)
                     # print audit list
-                    st.info('Audit Procedures Generated: ')
+                    st.info('Audit Procedure '+count+': ')
                     for audit in audit_list:
                         st.write(audit)
                 # convert to dataframe
