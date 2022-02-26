@@ -10,7 +10,7 @@ model = AutoModelForSeq2SeqLM.from_pretrained("vyang/plc2proc")
 def predict(sources, batch_size=8,topn=3,max_length=50):
     model.eval() # 将模型转换为评估模式
     
-    kwargs = {"num_beams":4,'max_length':max_length,
+    kwargs = {"num_beams":topn,'max_length':max_length,
               'no_repeat_ngram_size':2, 
               'num_return_sequences':topn,'early_stopping':True }
     
