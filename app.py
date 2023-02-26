@@ -3,8 +3,8 @@ import streamlit as st
 import pandas as pd
 import docx
 import numpy as np
-from plc2audit import predict
-
+# from plc2audit import predict
+from gptfunc import get_chatbot_response
 
 def main():
 
@@ -14,9 +14,11 @@ def main():
     if input_method == 'Manual':
         proc_text = st.text_area('Testing Procedures')
 
-        proc_list = proc_text.split('/')
-        # filter blank item
-        proc_list = list(filter(lambda item: item.strip(), proc_list))
+        if st.button('Predict'):
+            # get prediction result
+            result = get_chatbot_response(proc_text)
+            # display result
+            st.write(result)
 
     elif input_method == 'Upload File':
         # upload file
@@ -99,35 +101,44 @@ def main():
             st.error('No file selected')
             proc_list = []
 
-    top = st.sidebar.slider('AuditProc Generation Number',
-                            min_value=1,
-                            max_value=10,
-                            value=3)
-    # choose max length of auditproc
-    max_length = st.sidebar.slider('Max Length of AuditProc',
-                                   min_value=25,
-                                   max_value=100,
-                                   value=50)
-    # get proc_list and audit_list length
-    proc_len = len(proc_list)
+        # top = st.sidebar.slider('AuditProc Generation Number',
+        #                         min_value=1,
+        #                         max_value=10,
+        #                         value=3)
+        # # choose max length of auditproc
+        # max_length = st.sidebar.slider('Max Length of AuditProc',
+        #                             min_value=25,
+        #                             max_value=100,
+        #                             value=50)
+        # get proc_list and audit_list length
+        proc_len = len(proc_list)
 
-    # if proc_list or audit_list is empty or not equal
-    if proc_len == 0:
-        st.error('Procedure list must not empty')
-        return
-    else:
-        # choose start and end index
-        start_idx = st.sidebar.number_input('Choose start index',
-                                            min_value=0,
+        # if proc_list or audit_list is empty or not equal
+        if proc_len == 0:
+            st.error('Procedure list must not empty')
+            return
+        else:
+            # choose start and end index
+            start_idx = st.sidebar.number_input('Choose start index',
+                                                min_value=0,
+                                                max_value=proc_len - 1,
+                                                value=0)
+            end_idx = st.sidebar.number_input('Choose end index',
+                                            min_value=start_idx,
                                             max_value=proc_len - 1,
-                                            value=0)
-        end_idx = st.sidebar.number_input('Choose end index',
-                                          min_value=start_idx,
-                                          max_value=proc_len - 1,
-                                          value=proc_len - 1)
+                                            value=proc_len - 1)
 
-        # get proc_list and audit_list
-        subproc_list = proc_list[start_idx:end_idx + 1]
+            # get proc_list and audit_list
+            subproc_list = proc_list[start_idx:end_idx + 1]
+
+        # display subproc_list
+        st.subheader('Procedure List')
+        # display subproc_list
+        for i, proc in enumerate(subproc_list):
+            st.write(f'{i + 1}. ' + proc)
+
+    # input prompt text
+    prompt_text = st.sidebar.text_area('Prompt Text')
 
     search = st.sidebar.button('Convert')
 
@@ -151,14 +162,15 @@ def main():
                 st.subheader('Results: ' + f'{start}-{end}')
 
                 # get audit list
-                audit_batch = predict(proc_batch,8, top, max_length)
+                # audit_batch = predict(proc_batch,8, top, max_length)
                 auditls = []
                 for i, proc in enumerate(proc_batch):
                     # audit range with stride x
-                    audit_start = i * top
-                    audit_end = audit_start + top
+                    # audit_start = i * top
+                    # audit_end = audit_start + top
                     # get audit list
-                    audit_list = audit_batch[audit_start:audit_end]
+                    # audit_list = audit_batch[audit_start:audit_end]
+                    audit_list = get_chatbot_response(prompt_text+proc)
                     auditls.append(audit_list)
                     # get count number from start
                     count = str(j * batch_num + i + 1)
@@ -168,8 +180,9 @@ def main():
                     st.write(proc)
                     # print audit list
                     st.info('Audit Procedure '+count+': ')
-                    for audit in audit_list:
-                        st.write(audit)
+                    # for audit in audit_list:
+                    #     st.write(audit)
+                    st.write(audit_list)
                 # convert to dataframe
                 df = pd.DataFrame({
                     'policy': proc_batch,
