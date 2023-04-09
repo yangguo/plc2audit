@@ -10,13 +10,15 @@ def main():
 
     # choose input method of manual or upload file
     input_method = st.sidebar.radio('Input Method', ('Manual', 'Upload File'))
+    # choose model
+    model_name = st.sidebar.selectbox('选择模型', ['gpt-3.5-turbo', 'gpt-4'])
 
     if input_method == 'Manual':
         proc_text = st.text_area('Testing Procedures')
 
         if st.button('Predict'):
             # get prediction result
-            result = get_chatbot_response(proc_text)
+            result = get_chatbot_response(proc_text,model_name)
             # display result
             st.write(result)
 
@@ -135,73 +137,78 @@ def main():
         st.subheader('Procedure List')
         # display subproc_list
         for i, proc in enumerate(subproc_list):
-            st.write(f'{i + 1}. ' + proc)
+            st.markdown('##### ' + str(i) + ": " + proc)
 
-    # input prompt text
-    prompt_text = st.sidebar.text_area('Prompt Text')
+        # input prompt text
+        # prompt_text = st.sidebar.text_area('Prompt Text')
 
-    search = st.sidebar.button('Convert')
+        search = st.sidebar.button('Convert')
 
-    if search:
-        # split list into batch of 5
-        batch_num = 5
-        proc_list_batch = [
-            subproc_list[i:i + batch_num]
-            for i in range(0, len(subproc_list), batch_num)
-        ]
+        if search:
+            # split list into batch of 5
+            batch_num = 5
+            proc_list_batch = [
+                subproc_list[i:i + batch_num]
+                for i in range(0, len(subproc_list), batch_num)
+            ]
 
-        dfls = []
-        # get proc and audit batch
-        for j, proc_batch in enumerate(proc_list_batch):
+            dfls = []
+            # get proc and audit batch
+            for j, proc_batch in enumerate(proc_list_batch):
 
-            with st.spinner('Converting...'):
-                # range of the batch
-                start = j * batch_num + 1
-                end = start + len(proc_batch) - 1
+                with st.spinner('Converting...'):
+                    # range of the batch
+                    start = j * batch_num + 1
+                    end = start + len(proc_batch) - 1
 
-                st.subheader('Results: ' + f'{start}-{end}')
+                    st.subheader('Results: ' + f'{start}-{end}')
 
-                # get audit list
-                # audit_batch = predict(proc_batch,8, top, max_length)
-                auditls = []
-                for i, proc in enumerate(proc_batch):
-                    # audit range with stride x
-                    # audit_start = i * top
-                    # audit_end = audit_start + top
                     # get audit list
-                    # audit_list = audit_batch[audit_start:audit_end]
-                    audit_list = get_chatbot_response(prompt_text+proc)
-                    auditls.append(audit_list)
-                    # get count number from start
-                    count = str(j * batch_num + i + 1)
-                    
-                    # print proc and audit list
-                    st.warning('Policy '+count+':')
-                    st.write(proc)
-                    # print audit list
-                    st.info('Audit Procedure '+count+': ')
-                    # for audit in audit_list:
-                    #     st.write(audit)
-                    st.write(audit_list)
-                # convert to dataframe
-                df = pd.DataFrame({
-                    'policy': proc_batch,
-                    'auditproc': auditls
-                })
-                dfls.append(df)
+                    # audit_batch = predict(proc_batch,8, top, max_length)
+                    auditls = []
+                    for i, proc in enumerate(proc_batch):
+                        # audit range with stride x
+                        # audit_start = i * top
+                        # audit_end = audit_start + top
+                        # get audit list
+                        # audit_list = audit_batch[audit_start:audit_end]
+                        # check if proc is blank, after remove space
+                        if proc.replace(' ', '') == '':
+                            st.error('Procedure must not empty')
+                            audit_list = ''
+                        else:
+                            audit_list = get_chatbot_response(proc,model_name)
+                        auditls.append(audit_list)
+                        # get count number from start
+                        count = str(j * batch_num + i + 1)
+                        
+                        # print proc and audit list
+                        st.warning('Policy '+count+':')
+                        st.write(proc)
+                        # print audit list
+                        st.info('Audit Procedure '+count+': ')
+                        # for audit in audit_list:
+                        #     st.write(audit)
+                        st.write(audit_list)
+                    # convert to dataframe
+                    df = pd.DataFrame({
+                        'policy': proc_batch,
+                        'auditproc': auditls
+                    })
+                    dfls.append(df)
 
-        # conversion is done
-        st.sidebar.success('Conversion Finish')
-        # if dfls not empty
-        if dfls:
-            alldf = pd.concat(dfls)
-            # df explode by auditproc and reset index
-            alldf = alldf.explode('auditproc')
-            alldf = alldf.reset_index(drop=True)                    
-            st.sidebar.download_button(label='Download',
-                                       data=alldf.to_csv(),
-                                       file_name='plc2auditresult.csv',
-                                       mime='text/csv')
+            # conversion is done
+            st.sidebar.success('Conversion Finish')
+            # if dfls not empty
+            if dfls:
+                alldf = pd.concat(dfls)
+                # df explode by auditproc and reset index
+                alldf = alldf.explode('auditproc')
+                alldf = alldf.reset_index(drop=True)                    
+                st.sidebar.download_button(label='Download',
+                                        data=alldf.to_csv(),
+                                        file_name='plc2auditresult.csv',
+                                        mime='text/csv')
 
 
 if __name__ == '__main__':
