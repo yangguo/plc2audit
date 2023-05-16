@@ -1,4 +1,4 @@
-
+import pandas as pd
 from langchain.chat_models import ChatOpenAI
 from langchain.schema import (
     AIMessage,
@@ -53,14 +53,22 @@ def get_chatbot_response(text,model_name="gpt-3.5-turbo"):
     system_message_prompt = SystemMessagePromptTemplate.from_template(template)
 
     human_template = f"""
-    针对监管要求编写以下详细内容，按照审计步骤列出信息：
-    - 审计工作
-    - 访谈问题
-    - 资料清单
-    
+    针对监管要求编写审计步骤及相关内容：
+    - '步骤编号'：'每一项审计工作的编号'
+    - '审计工作'：'针对每一项监管要求，需要进行的具体审计工作'
+    - '访谈问题'：'针对每一项审计工作，需要向被审计方提出的访谈问题'
+    - '资料清单'：'针对每一项审计工作，需要准备的审计资料'
+
     监管要求使用'''进行间隔。
     
-    输出的格式输出的格式为JSON，key为审计工作，value为审计工作列表，key为访谈问题，value为访谈问题列表，key为资料清单，value为资料清单列表。
+    输出的格式为JSON，每一个审计步骤应该是一个独立的对象，包含以下四个字段："步骤编号"，"审计工作"，"访谈问题"，"资料清单"。字段的值应该是具体的信息。
+
+    例如：
+    "步骤编号": "1",
+    "审计工作": "确认证券期货机构是否有相关文档分类管理制度",
+    "访谈问题": "请描述证券期货机构的文档分类管理制度",
+    "资料清单": "证券期货机构的文档分类管理制度"
+    
 
     监管要求：'''{text}'''
     """
@@ -74,4 +82,19 @@ def get_chatbot_response(text,model_name="gpt-3.5-turbo"):
     chain = LLMChain(llm=llm, prompt=chat_prompt)
     # response = chat(chat_prompt.format_prompt(text=text).to_messages())
     response = chain.run(text=text)
-    return response
+    # return response
+    # convert json to dataframe
+    df = convert_json_to_df(response)
+    return df
+
+
+# convert json response to dataframe
+def convert_json_to_df(response):
+    
+    data_dict = json.loads(response)
+
+    # Convert dictionary to DataFrame
+    # df = pd.DataFrame.from_dict(data_dict, orient='index')
+    df = pd.DataFrame.from_dict(data_dict)
+
+    return df
