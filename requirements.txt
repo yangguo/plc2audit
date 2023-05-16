@@ -6,3 +6,7 @@ transformers
 sentencepiece
 torch
 openpyxl
+streamlit
+langchain
+python-dotenv
+openai

@@ -53,16 +53,14 @@ def get_chatbot_response(text,model_name="gpt-3.5-turbo"):
     system_message_prompt = SystemMessagePromptTemplate.from_template(template)
 
     human_template = f"""
-    针对监管要求编写以下详细内容：
-    - 审计步骤
+    针对监管要求编写以下详细内容，按照审计步骤列出信息：
+    - 审计工作
     - 访谈问题
     - 资料清单
     
     监管要求使用'''进行间隔。
-    审计步骤的输出的格式为JSON，key为步骤名称，value为步骤内容。
-    访谈问题的输出的格式为JSON，key为问题名称，value为问题内容。
-    资料清单的输出的格式为JSON，key为资料名称，value为资料内容。
-    审计步骤的输出、访谈问题的输出、资料清单的输出之间使用'''进行间隔。
+    
+    输出的格式输出的格式为JSON，key为审计工作，value为审计工作列表，key为访谈问题，value为访谈问题列表，key为资料清单，value为资料清单列表。
 
     监管要求：'''{text}'''
     """
