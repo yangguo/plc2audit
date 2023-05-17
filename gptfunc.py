@@ -63,12 +63,11 @@ def get_chatbot_response(text,model_name="gpt-3.5-turbo"):
     
     输出的格式为JSON，每一个审计步骤应该是一个独立的对象，包含以下四个字段："步骤编号"，"审计工作"，"访谈问题"，"资料清单"。字段的值应该是具体的信息。
 
-    例如：
-    "步骤编号": "1",
+    包含一个对象的输出样例：
+    {{{{"步骤编号": "1",
     "审计工作": "确认证券期货机构是否有相关文档分类管理制度",
     "访谈问题": "请描述证券期货机构的文档分类管理制度",
-    "资料清单": "证券期货机构的文档分类管理制度"
-    
+    "资料清单": "证券期货机构的文档分类管理制度" }}}}
 
     监管要求：'''{text}'''
     """
@@ -82,10 +81,10 @@ def get_chatbot_response(text,model_name="gpt-3.5-turbo"):
     chain = LLMChain(llm=llm, prompt=chat_prompt)
     # response = chat(chat_prompt.format_prompt(text=text).to_messages())
     response = chain.run(text=text)
-    # return response
+    return response
     # convert json to dataframe
-    df = convert_json_to_df(response)
-    return df
+    # df = convert_json_to_df(response)
+    # return df
 
 
 # convert json response to dataframe
