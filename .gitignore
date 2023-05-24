@@ -137,3 +137,5 @@ dmypy.json
 
 # ignore files
 config.json
+
+.trunk
