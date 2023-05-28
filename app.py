@@ -11,12 +11,13 @@ from gptfunc import (
     get_chatbot_response,
     merge_items,
     separate_items,
+    extract_information_from_case
 )
 
 
 def main():
     # choose input method of manual or upload file
-    input_method = st.sidebar.radio("Input Method", ("Manual", "Upload File"))
+    input_method = st.sidebar.radio("Input Method", ("Case analysis","Manual", "Upload File"))
     # choose model
     model_name = st.sidebar.selectbox("选择模型", ["gpt-3.5-turbo", "gpt-4"])
 
@@ -26,6 +27,17 @@ def main():
         if st.button("Predict"):
             # get prediction result
             result = get_chatbot_response(proc_text, model_name)
+            # convert json to dataframe
+            df = convert_json_to_df(result)
+            # display result
+            st.table(df.astype(str))
+
+    elif input_method == "Case analysis":
+        case_text = st.text_area("Case analysis")
+
+        if st.button("Extract"):
+            # extract information from case
+            result = extract_information_from_case(case_text, model_name)
             # convert json to dataframe
             df = convert_json_to_df(result)
             # display result

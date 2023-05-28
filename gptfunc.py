@@ -119,3 +119,40 @@ def separate_items(input_list):
         document_list.append(item["资料清单"])
 
     return audit_work_list, interview_question_list, document_list
+
+
+def extract_information_from_case(text, model_name="gpt-3.5-turbo"):
+    template = "你是一位具有高级文本理解能力的人工智能助手，你的任务是从监管处罚案件的描述中提取关键信息。"
+    system_message_prompt = SystemMessagePromptTemplate.from_template(template)
+
+    human_template = f"""
+    我需要你从下面的文本中提取以下信息：当事人、违法违规事实、处罚结果、处罚依据、监管部门和时间。将这些信息以JSON格式输出。
+
+    处罚案件描述使用'''进行间隔。
+
+    输出的格式应为一个JSON对象，包含以下字段："当事人"，"违法违规事实"，"处罚结果"，"处罚依据"，"监管部门"，"时间"。字段的值应为具体的信息。
+
+    以下是一个输出样例：
+    {{
+      "当事人": "ABC公司",
+      "违法违规事实": "ABC公司违反了证券交易规定",
+      "处罚结果": "罚款10000元",
+      "处罚依据": "证券法第xx条",
+      "监管部门": "中国证监会",
+      "时间": "2023-06-01"
+    }}
+
+    处罚案件的内容如下:
+    '''{text}'''
+    """
+
+    human_message_prompt = HumanMessagePromptTemplate.from_template(human_template)
+
+    chat_prompt = ChatPromptTemplate.from_messages(
+        [system_message_prompt, human_message_prompt]
+    )
+
+    chain = LLMChain(llm=llm, prompt=chat_prompt)
+    response = chain.run(text=text)
+
+    return response
