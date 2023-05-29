@@ -38,8 +38,10 @@ def main():
         if st.button("Extract"):
             # extract information from case
             result = extract_information_from_case(case_text, model_name)
+
+            st.write(result)
             # convert json to dataframe
-            df = convert_json_to_df(result)
+            df = pd.DataFrame(result,index=[0])
             # display result
             st.table(df.astype(str))
 

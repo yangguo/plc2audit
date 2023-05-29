@@ -11,6 +11,7 @@ from langchain.prompts.chat import (
     SystemMessagePromptTemplate,
 )
 from langchain.schema import AIMessage, HumanMessage, SystemMessage
+from langchain.output_parsers import StructuredOutputParser, ResponseSchema
 
 load_dotenv()
 
@@ -122,37 +123,48 @@ def separate_items(input_list):
 
 
 def extract_information_from_case(text, model_name="gpt-3.5-turbo"):
-    template = "你是一位具有高级文本理解能力的人工智能助手，你的任务是从监管处罚案件的描述中提取关键信息。"
+
+    response_schemas = [
+        ResponseSchema(name="当事人", description="处罚案件的当事人名称，例如：ABC公司"),
+        ResponseSchema(name="违法违规事实", description="处罚案件的具体违法违规事实，例如：ABC公司违反了证券交易规定，從事内幕交易"),
+           ResponseSchema(name="处罚结果", description="处罚案件的详细处罚结果，例如：警告、罚款10000元"),
+        ResponseSchema(name="处罚依据", description="处罚案件的处罚依据条款，例如：《证券法》第一百八十九条第一款"),
+       ResponseSchema(name="监管部门", description="处罚案件的监管部门，例如：中国证监会"),
+        ResponseSchema(name="处罚时间", description="处罚案件的处罚时间，例如：2023年2月27日"),
+       ResponseSchema(name="违法违规类型", description="处罚案件的违法违规类型，例如：内幕交易"),
+        ResponseSchema(name="罚款总金额", description="处罚案件的罚款总金额，例如：10万元"),
+    ResponseSchema(name="没收总金额", description="处罚案件的没收总金额，例如：10万元")
+    ]
+    output_parser = StructuredOutputParser.from_response_schemas(response_schemas)
+
+    format_instructions = output_parser.get_format_instructions()
+
+    template = """
+    你是一位具有高级文本理解能力的人工智能助手，你的任务是从监管处罚案件的描述中提取关键信息。
+    
+    我需要你从下面的处罚案件文本中提取以下信息：当事人、违法违规事实、处罚结果、处罚依据条款、监管部门、处罚时间、违法违规类型、罚款总金额、没收总金额。
+    
+    {format_instructions}
+
+    """
     system_message_prompt = SystemMessagePromptTemplate.from_template(template)
 
-    human_template = f"""
-    我需要你从下面的文本中提取以下信息：当事人、违法违规事实、处罚结果、处罚依据、监管部门和时间。将这些信息以JSON格式输出。
-
-    处罚案件描述使用'''进行间隔。
-
-    输出的格式应为一个JSON对象，包含以下字段："当事人"，"违法违规事实"，"处罚结果"，"处罚依据"，"监管部门"，"时间"。字段的值应为具体的信息。
-
-    以下是一个输出样例：
-    {{
-      "当事人": "ABC公司",
-      "违法违规事实": "ABC公司违反了证券交易规定",
-      "处罚结果": "罚款10000元",
-      "处罚依据": "证券法第xx条",
-      "监管部门": "中国证监会",
-      "时间": "2023-06-01"
-    }}
-
+    human_template = f"""    
     处罚案件的内容如下:
-    '''{text}'''
+    {text}
     """
 
     human_message_prompt = HumanMessagePromptTemplate.from_template(human_template)
 
-    chat_prompt = ChatPromptTemplate.from_messages(
-        [system_message_prompt, human_message_prompt]
+    chat_prompt = ChatPromptTemplate(
+        messages=[system_message_prompt, human_message_prompt],
+         input_variables=["text"],
+    partial_variables={"format_instructions": format_instructions}
     )
 
     chain = LLMChain(llm=llm, prompt=chat_prompt)
     response = chain.run(text=text)
 
-    return response
+    json_response=output_parser.parse(response)
+
+    return json_response
