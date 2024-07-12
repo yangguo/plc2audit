@@ -1,5 +1,3 @@
-from textwrap import wrap
-
 import docx
 import numpy as np
 import pandas as pd
@@ -7,43 +5,50 @@ import streamlit as st
 
 # from plc2audit import predict
 from gptfunc import (
-    convert_json_to_df,
-    get_chatbot_response,
-    merge_items,
-    separate_items,
-    extract_information_from_case
+    extract_information_from_case,
+    get_audit_steps,
+    shorten_and_summarize,
+    text_cleanup,
 )
 
 
 def main():
     # choose input method of manual or upload file
-    input_method = st.sidebar.radio("Input Method", ("Case analysis","Manual", "Upload File"))
+    input_method = st.sidebar.radio(
+        "Input Method", ("Case analysis", "Manual", "Upload File")
+    )
     # choose model
-    model_name = st.sidebar.selectbox("选择模型", ["gpt-3.5-turbo", "gpt-4"])
-
+    model_name = st.sidebar.selectbox(
+        "选择模型",
+        ["gpt-35-turbo", "gpt-35-turbo-16k", "gpt-4", "gpt-4-32k", "gpt-4-turbo"],
+    )
     if input_method == "Manual":
         proc_text = st.text_area("Testing Procedures")
 
         if st.button("Predict"):
             # get prediction result
-            result = get_chatbot_response(proc_text, model_name)
-            # convert json to dataframe
-            df = convert_json_to_df(result)
-            # display result
-            st.table(df.astype(str))
+            # result = get_chatbot_response(proc_text, model_name)
+            result = get_audit_steps(proc_text, model_name)
+            st.write(result)
 
     elif input_method == "Case analysis":
         case_text = st.text_area("Case analysis")
 
         if st.button("Extract"):
+            # clean text
+            case_text = text_cleanup(case_text)
+            # st.write(case_text)
+            # shorten and summarize case
+            sum_text = shorten_and_summarize(case_text)
+            # st.write(sum_text)
             # extract information from case
-            result = extract_information_from_case(case_text, model_name)
+            result = extract_information_from_case(sum_text, model_name)
 
             st.write(result)
-            # convert json to dataframe
-            df = pd.DataFrame(result,index=[0])
-            # display result
-            st.table(df.astype(str))
+            # # convert json to dataframe
+            # df = pd.DataFrame(result,index=[0])
+            # # display result
+            # st.table(df.astype(str))
 
     elif input_method == "Upload File":
         # upload file
@@ -162,7 +167,7 @@ def main():
         st.subheader("Procedure List")
         # display subproc_list
         for i, proc in enumerate(subproc_list):
-            st.markdown("##### " + str(i) + ": " + proc)
+            st.write(str(i) + ": " + proc)
 
         # input prompt text
         # prompt_text = st.sidebar.text_area('Prompt Text')
@@ -189,7 +194,7 @@ def main():
 
                     # get audit list
                     # audit_batch = predict(proc_batch,8, top, max_length)
-                    auditls = []
+                    # auditls = []
                     for i, proc in enumerate(proc_batch):
                         # audit range with stride x
                         # audit_start = i * top
@@ -200,12 +205,12 @@ def main():
                         if proc.replace(" ", "") == "":
                             st.error("Procedure must not empty")
                             audit_list = ""
-                            merged_audit_list = ""
+                            # merged_audit_list = ""
                         else:
-                            audit_list = get_chatbot_response(proc, model_name)
+                            audit_list = get_audit_steps(proc, model_name)
                             # merge audit list
-                            merged_audit_list = merge_items(audit_list)
-                        auditls.append(merged_audit_list)
+                            # merged_audit_list = merge_items(audit_list)
+                        # auditls.append(merged_audit_list)
                         # get count number from start
                         count = str(j * batch_num + i + 1)
 
@@ -217,31 +222,33 @@ def main():
                         # for audit in audit_list:
                         #     st.write(audit)
                         # convert to df
-                        df = convert_json_to_df(audit_list)
+                        df = pd.DataFrame(audit_list, index=[0])
                         st.table(df)
-                        st.write(merged_audit_list)
+                        # st.write(merged_audit_list)
 
-                    (
-                        audit_work_list,
-                        interview_question_list,
-                        document_list,
-                    ) = separate_items(auditls)
-                    # convert to dataframe
-                    df = pd.DataFrame(
-                        {
-                            "policy": proc_batch,
-                            "auditwork": audit_work_list,
-                            "interviewquestion": interview_question_list,
-                            "document": document_list,
-                        }
-                    )
-                    dfls.append(df)
+                        # (
+                        #     audit_work_list,
+                        #     interview_question_list,
+                        #     document_list,
+                        # ) = separate_items(auditls)
+                        # convert to dataframe
+                        # df = pd.DataFrame(
+                        #     {
+                        #         "policy": proc_batch,
+                        #         "auditwork": audit_work_list,
+                        #         "interviewquestion": interview_question_list,
+                        #         "document": document_list,
+                        #     }
+                        # )
+                        dfls.append(df)
 
             # conversion is done
             st.sidebar.success("Conversion Finish")
             # if dfls not empty
             if dfls:
                 alldf = pd.concat(dfls)
+                # reset index
+                alldf = alldf.reset_index(drop=True)
                 # df explode by auditproc and reset index
                 # alldf = alldf.explode('auditproc')
                 # alldf = alldf.reset_index(drop=True)
